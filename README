@@ -25,7 +25,10 @@ and different performance characteristics.
 All four RWLock implementations share a common locking/unlocking API,
 though they differ somewhat in initialization:
 
-void StartRead(); void EndRead(); void StartWrite(); void EndWrite();
+void StartRead(); 
+void EndRead(); 
+void StartWrite(); 
+void EndWrite();
 
 The usage is completely straight-forward. Readers call StartRead() to
 access a shared resource for reading and EndRead() at the end of
