@@ -1,0 +1,72 @@
+RWLock is a C++ library meant to provide light-weight read-write locks
+for Windows thread synchronization. RWLock is intended to be both
+versatile and lightweight, and comes in a few different flavors.
+
+RWLock is developed and maintained by Mahmoud Al- Qudsi
+<mqudsi@neosmart.net> of NeoSmart Technologies <http://neosmart.net/>
+
+Pthread's rwlock objects provide a high-performance of allowing either
+multiple readers to access a resource simultaneously or a single
+writer. Windows did not have an equivalent thread synchronization
+primitive, until Windows Vista was released. However, most software
+developers still target Windows XP and above, so this library should
+fill in the gap. You can either use RWLock on all target systems or
+dynamically switch between native WIN32 SRW Locks.
+
+Unlike pthread_rwlock_t and SRW Locks, RWLock can be used for
+interprocess read-write synchronization via placement in a shared data
+segment.
+
+Usage:
+
+RWLock comes in four distinct flavors, each with different features
+and different performance characteristics.
+
+All four RWLock implementations share a common locking/unlocking API,
+though they differ somewhat in initialization:
+
+void StartRead(); void EndRead(); void StartWrite(); void EndWrite();
+
+The usage is completely straight-forward. Readers call StartRead() to
+access a shared resource for reading and EndRead() at the end of
+accessing the shared resource. Writers do the same with StartWrite()
+and EndWrite(). These functions take no parameters and return no
+values.
+
+The different RWLock flavors are listed below, from fastest to
+slowest. You should use the fastest object that meets your
+requirements:
+
+1. RWLock()
+
+* This is the fastest and lightest RWLock flavor RWLock cannot be used
+* for cross-process synchronization RWLock does not support reentrance
+* (BeginRead() being called multiple times by the same thread before
+* EndRead() is called) RWLock does not support calling BeginRead()
+* after calling BeginWrite() but before calling EndWrite()
+
+2. RWLockReentrant()
+
+* RWLockReentrant supports reentrance RWLockReentrant supports calling
+* BeginRead() after BeginWrite() RWLockReentrant cannot be used for
+* cross-process synchronization
+
+3. RWLockIPC(unsigned __int32 *lock, LPCTSTR guid)
+
+lock: pointer to a 32-bit unsigned integer located in a shared data
+segment guid: unique string used to create the named synchronization
+objects
+
+* RWLockIPC can be used for cross-process synchronization RWLockIPC
+* does not support reentrance RWLockIPC does not support calling
+* BeginRead() after calling BeginWrite()
+
+4. RWLockIPCReentrant(unsigned __int32 *lock, LPCTSTR guid)
+
+lock: pointer to a 32-bit unsigned integer located in a shared data
+segment guid: unique string used to create the named synchronization
+objects
+
+* RWLockIPCReentrant can be used for cross-process synchronization
+* RWLockIPCReentrant supports reentrance RWLockIPCReentrant supports
+* calling BeginRead() after calling BeginWrite()
