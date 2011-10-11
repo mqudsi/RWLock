@@ -115,7 +115,10 @@ void RWLockIPC::StartRead()
 		else
 		{
 			if(i < MAX_SPIN)
+			{
+				YieldProcessor();
 				continue;
+			}
 
 			//The pending write operation is taking too long, so we'll drop to the kernel and wait
 			if(InterlockedCompareExchange((LONG*)_lock, SetWaiting(temp, WaitingCount(temp) + 1), temp) != temp)
@@ -147,7 +150,10 @@ void RWLockIPC::StartWrite()
 		else
 		{
 			if(i < MAX_SPIN)
+			{
+				YieldProcessor();
 				continue;
+			}
 
 			//The pending read operations are taking too long, so we'll drop to the kernel and wait
 			if(InterlockedCompareExchange((LONG*)_lock, SetWaiting(temp, WaitingCount(temp) + 1), temp) != temp)
