@@ -1,3 +1,10 @@
+/*
+ * RWLock
+ * Author: Mahmoud Al-Qudsi <mqudsi@neosmart.net>
+ * Copyright (C) 2011 by NeoSmart Technologies
+ * This code is released under the terms of the MIT License
+*/
+
 #include "stdafx.h"
 #include "RWLock.h"
 

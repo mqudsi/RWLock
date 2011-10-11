@@ -1,6 +1,11 @@
-#pragma once
+/*
+ * RWLock
+ * Author: Mahmoud Al-Qudsi <mqudsi@neosmart.net>
+ * Copyright (C) 2011 by NeoSmart Technologies
+ * This code is released under the terms of the MIT License
+*/
 
-#include <Windows.h>
+#pragma once
 
 #ifndef RWLOCK_API
 #ifdef RWLOCK_EXPORTS
