@@ -25,9 +25,9 @@ and different performance characteristics.
 All four RWLock implementations share a common locking/unlocking API,
 though they differ somewhat in initialization:
 
-void StartRead(); 
-void EndRead(); 
-void StartWrite(); 
+void StartRead();
+void EndRead();
+void StartWrite();
 void EndWrite();
 
 The usage is completely straight-forward. Readers call StartRead() to
@@ -40,38 +40,53 @@ The different RWLock flavors are listed below, from fastest to
 slowest. You should use the fastest object that meets your
 requirements:
 
+
 1. RWLock()
 
 * This is the fastest and lightest RWLock flavor RWLock cannot be used
-* for cross-process synchronization RWLock does not support reentrance
-* (BeginRead() being called multiple times by the same thread before
-* EndRead() is called) RWLock does not support calling BeginRead()
-* after calling BeginWrite() but before calling EndWrite()
+  for cross-process synchronization
+
+* RWLock does not support reentrance(BeginRead() being called multiple
+  times by the same thread before EndRead() is called)
+
+* RWLock does not support calling BeginRead() after calling
+  BeginWrite() but before calling EndWrite()
+
 
 2. RWLockReentrant()
 
-* RWLockReentrant supports reentrance RWLockReentrant supports calling
-* BeginRead() after BeginWrite() RWLockReentrant cannot be used for
-* cross-process synchronization
+* RWLockReentrant supports reentrance
+
+* RWLockReentrant supports calling BeginRead() after BeginWrite()
+
+* RWLockReentrant cannot be used for cross-process synchronization
+
 
 3. RWLockIPC(unsigned __int32 *lock, LPCTSTR guid)
 
 lock: pointer to a 32-bit unsigned integer located in a shared data
-segment 
-guid: unique string used to create the named synchronization
-objects
+segment
 
-* RWLockIPC can be used for cross-process synchronization RWLockIPC
-* does not support reentrance RWLockIPC does not support calling
-* BeginRead() after calling BeginWrite()
+guid: unique string used to create the named synchronization objects
+
+* RWLockIPC can be used for cross-process synchronization
+
+* RWLockIPC does not support reentrance
+
+* RWLockIPC does not support calling BeginRead() after calling
+  BeginWrite()
+  
 
 4. RWLockIPCReentrant(unsigned __int32 *lock, LPCTSTR guid)
 
 lock: pointer to a 32-bit unsigned integer located in a shared data
-segment 
-guid: unique string used to create the named synchronization
-objects
+segment
+
+guid: unique string used to create the named synchronization objects
 
 * RWLockIPCReentrant can be used for cross-process synchronization
-* RWLockIPCReentrant supports reentrance RWLockIPCReentrant supports
-* calling BeginRead() after calling BeginWrite()
+
+* RWLockIPCReentrant supports reentrance
+
+* RWLockIPCReentrant supports calling BeginRead() after calling
+  BeginWrite()
