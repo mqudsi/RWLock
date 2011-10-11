@@ -57,7 +57,8 @@ requirements:
 3. RWLockIPC(unsigned __int32 *lock, LPCTSTR guid)
 
 lock: pointer to a 32-bit unsigned integer located in a shared data
-segment guid: unique string used to create the named synchronization
+segment 
+guid: unique string used to create the named synchronization
 objects
 
 * RWLockIPC can be used for cross-process synchronization RWLockIPC
@@ -67,7 +68,8 @@ objects
 4. RWLockIPCReentrant(unsigned __int32 *lock, LPCTSTR guid)
 
 lock: pointer to a 32-bit unsigned integer located in a shared data
-segment guid: unique string used to create the named synchronization
+segment 
+guid: unique string used to create the named synchronization
 objects
 
 * RWLockIPCReentrant can be used for cross-process synchronization
