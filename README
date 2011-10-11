@@ -5,17 +5,18 @@ versatile and lightweight, and comes in a few different flavors.
 RWLock is developed and maintained by Mahmoud Al- Qudsi
 <mqudsi@neosmart.net> of NeoSmart Technologies <http://neosmart.net/>
 
-Pthread's rwlock objects provide a high-performance of allowing either
-multiple readers to access a resource simultaneously or a single
-writer. Windows did not have an equivalent thread synchronization
-primitive, until Windows Vista was released. However, most software
-developers still target Windows XP and above, so this library should
-fill in the gap. You can either use RWLock on all target systems or
-dynamically switch between native WIN32 SRW Locks.
+Pthread's rwlock objects provide a high-performance means of allowing
+either multiple readers to access a resource simultaneously or a
+single writer. Windows did not have an equivalent thread
+synchronization primitive until Windows Vista was released. However,
+most software developers still target Windows XP and above, so this
+library should come in handy to fill in the gap. You can either use
+RWLock on all target systems or dynamically choose between RWLocks and
+native WIN32 SRW Locks at runtime.
 
 Unlike pthread_rwlock_t and SRW Locks, RWLock can be used for
-interprocess read-write synchronization via placement in a shared data
-segment.
+interprocess read-write synchronization via placement of a single
+32-bit unsigned integer in a shared data segment.
 
 Usage:
 
@@ -75,7 +76,7 @@ guid: unique string used to create the named synchronization objects
 
 * RWLockIPC does not support calling BeginRead() after calling
   BeginWrite()
-  
+
 
 4. RWLockIPCReentrant(unsigned __int32 *lock, LPCTSTR guid)
 
