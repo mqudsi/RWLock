@@ -77,17 +77,20 @@ RWLockIPC::RWLockIPC(unsigned __int32 *lock, LPCTSTR guid)
 
 	_lock = lock;
 
+	//Create local volatile for double-checked locking to work
+	volatile unsigned __int32 *vLock = lock;
+
 	_event = CreateEvent(&sa, FALSE, FALSE, guid);
 
-	if(!Initialized(*_lock))
+	if(!Initialized(*vLock))
 	{
 		HANDLE hMutex = CreateMutex(&sa, FALSE, guid);
 		WaitForSingleObject(hMutex, INFINITE);
 
-		if(!Initialized(*_lock))
+		if(!Initialized(*vLock))
 		{
-			*_lock = 0;
-			*_lock = SetInitialized(*_lock, true);
+			*vLock = 0;
+			*vLock = SetInitialized(*vLock, true);
 		}
 
 		ReleaseMutex(hMutex);
