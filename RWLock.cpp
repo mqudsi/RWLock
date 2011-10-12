@@ -8,7 +8,6 @@
 #include "stdafx.h"
 #include "RWLock.h"
 
-#define MAX_SPIN 50000
 #include <tchar.h>
 #include <assert.h>
 #include <stdlib.h>

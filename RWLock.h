@@ -20,6 +20,7 @@
 #endif
 
 #define RWLOCK_CC __fastcall
+#define MAX_SPIN 50000
 
 const unsigned __int32 RWLOCK_INIT = 0x00000000;
 
