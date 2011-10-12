@@ -269,6 +269,7 @@ RWLockIPCReentrant::~RWLockIPCReentrant()
 	THREAD_ENTRY *entry;
 	while((entry = (THREAD_ENTRY*) InterlockedPopEntrySList(_threadPointers)) != NULL)
 	{
+		delete entry->ThreadPointer;
 		_aligned_free(entry);
 	}
 
@@ -286,6 +287,7 @@ void RWLockIPCReentrant::StartRead()
 		*threadCounter = 0;
 		TlsSetValue(_tlsIndex, threadCounter);
 		THREAD_ENTRY *entry = (THREAD_ENTRY*)_aligned_malloc(sizeof(THREAD_ENTRY), MEMORY_ALLOCATION_ALIGNMENT);
+		entry->ThreadPointer = threadCounter;
 		InterlockedPushEntrySList(_threadPointers, &(entry->ItemEntry));
 	}
 	if(InterlockedIncrement((LONG*)threadCounter) == 1)
@@ -301,6 +303,7 @@ void RWLockIPCReentrant::StartWrite()
 		*threadCounter = 0;
 		TlsSetValue(_tlsIndex, threadCounter);
 		THREAD_ENTRY *entry = (THREAD_ENTRY*)_aligned_malloc(sizeof(THREAD_ENTRY), MEMORY_ALLOCATION_ALIGNMENT);
+		entry->ThreadPointer = threadCounter;
 		InterlockedPushEntrySList(_threadPointers, &(entry->ItemEntry));
 	}
 	if(InterlockedIncrement((LONG*)threadCounter) == 1)
@@ -316,6 +319,7 @@ void RWLockIPCReentrant::EndRead()
 		*threadCounter = 0;
 		TlsSetValue(_tlsIndex, threadCounter);
 		THREAD_ENTRY *entry = (THREAD_ENTRY*)_aligned_malloc(sizeof(THREAD_ENTRY), MEMORY_ALLOCATION_ALIGNMENT);
+		entry->ThreadPointer = threadCounter;
 		InterlockedPushEntrySList(_threadPointers, &(entry->ItemEntry));
 	}
 	assert(*threadCounter > 0);
@@ -332,6 +336,7 @@ void RWLockIPCReentrant::EndWrite()
 		*threadCounter = 0;
 		TlsSetValue(_tlsIndex, threadCounter);
 		THREAD_ENTRY *entry = (THREAD_ENTRY*)_aligned_malloc(sizeof(THREAD_ENTRY), MEMORY_ALLOCATION_ALIGNMENT);
+		entry->ThreadPointer = threadCounter;
 		InterlockedPushEntrySList(_threadPointers, &(entry->ItemEntry));
 	}
 	assert(*threadCounter > 0);
