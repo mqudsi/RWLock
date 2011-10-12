@@ -76,7 +76,7 @@ RWLockIPC::RWLockIPC(unsigned __int32 *lock, LPCTSTR guid)
 
 	_lock = lock;
 
-	//Create local volatile for double-checked locking to work
+	//Create local volatile pointer for double-checked locking to work
 	volatile unsigned __int32 *vLock = lock;
 
 	_event = CreateEvent(&sa, FALSE, FALSE, guid);
@@ -88,7 +88,7 @@ RWLockIPC::RWLockIPC(unsigned __int32 *lock, LPCTSTR guid)
 
 		if(!Initialized(*vLock))
 		{
-			*vLock = 0;
+			*vLock = RWLOCK_INIT;
 			*vLock = SetInitialized(*vLock, true);
 		}
 
@@ -126,7 +126,7 @@ void RWLockIPC::StartRead()
 			if(InterlockedCompareExchange((LONG*)_lock, SetWaiting(temp, WaitingCount(temp) + 1), temp) != temp)
 				continue;
 
-			i = 0; //reset the spincount for the next time
+			i = 0; //Reset the spincount for the next time
 			WaitForSingleObject(_event, INFINITE);
 
 			do
@@ -161,7 +161,7 @@ void RWLockIPC::StartWrite()
 			if(InterlockedCompareExchange((LONG*)_lock, SetWaiting(temp, WaitingCount(temp) + 1), temp) != temp)
 				continue;
 
-			i = 0; //reset the spincount for the next time
+			i = 0; //Reset the spincount for the next time
 			WaitForSingleObject(_event, INFINITE);
 
 			do
@@ -181,7 +181,9 @@ void RWLockIPC::EndRead()
 
 		if(ReaderCount(temp) == 1 && WaitingCount(temp) != 0)
 		{
-			//Note: this isn't nor has to be thread-safe
+			//Note: this isn't nor has to be thread-safe, as the worst a duplicate notification can do
+			//is cause a waiting to reader to wake, perform a spinlock, then go back to sleep
+
 			//We're the last reader and there's a pending write
 			//Wake one waiting writer
 			SetEvent(_event);
@@ -206,7 +208,7 @@ void RWLockIPC::EndWrite()
 			if(WaitingCount(temp) == 0)
 				break;
 
-			//Note: This is thread-safe (there's guaranteed not to be another EndWrite simultaneously)
+			//Note: this is thread-safe (there's guaranteed not to be another EndWrite simultaneously)
 			//Wake all waiting readers or writers, loop until wake confirmation is received
 			SetEvent(_event);
 		}
