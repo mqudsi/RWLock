@@ -203,12 +203,11 @@ void RWLockIPC::EndWrite()
 		{
 			temp = *_lock;
 			assert(Writer(temp));
-			__int16 waitingCount = WaitingCount(temp);
-			if(waitingCount == 0)
+			if(WaitingCount(temp) == 0)
 				break;
 
 			//Note: This is thread-safe (there's guaranteed not to be another EndWrite simultaneously)
-			//Wake all waiting readers or writers
+			//Wake all waiting readers or writers, loop until wake confirmation is received
 			SetEvent(_event);
 		}
 
