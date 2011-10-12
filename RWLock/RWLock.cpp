@@ -109,7 +109,7 @@ void RWLockIPC::StartRead()
 		__int32 temp = *_lock;
 		if(!Writer(temp))
 		{
-			if(InterlockedCompareExchange((LONG*)_lock, SetReaders(temp, ReaderCount(temp) + 1), temp) == temp)
+			if(InterlockedCompareExchange(_lock, SetReaders(temp, ReaderCount(temp) + 1), temp) == temp)
 				return;
 			else
 				continue;
@@ -123,7 +123,7 @@ void RWLockIPC::StartRead()
 			}
 
 			//The pending write operation is taking too long, so we'll drop to the kernel and wait
-			if(InterlockedCompareExchange((LONG*)_lock, SetWaiting(temp, WaitingCount(temp) + 1), temp) != temp)
+			if(InterlockedCompareExchange(_lock, SetWaiting(temp, WaitingCount(temp) + 1), temp) != temp)
 				continue;
 
 			i = 0; //Reset the spincount for the next time
@@ -132,7 +132,7 @@ void RWLockIPC::StartRead()
 			do
 			{
 				temp = *_lock;
-			} while(InterlockedCompareExchange((LONG*)_lock, SetWaiting(temp, WaitingCount(temp) - 1), temp) != temp);
+			} while(InterlockedCompareExchange(_lock, SetWaiting(temp, WaitingCount(temp) - 1), temp) != temp);
 		}
 	}
 }
@@ -144,7 +144,7 @@ void RWLockIPC::StartWrite()
 		__int32 temp = *_lock;
 		if(AllClear(temp))
 		{
-			if(InterlockedCompareExchange((LONG*)_lock, SetWriter(temp, true), temp) == temp)
+			if(InterlockedCompareExchange(_lock, SetWriter(temp, true), temp) == temp)
 				return;
 			else
 				continue;
@@ -158,7 +158,7 @@ void RWLockIPC::StartWrite()
 			}
 
 			//The pending read operations are taking too long, so we'll drop to the kernel and wait
-			if(InterlockedCompareExchange((LONG*)_lock, SetWaiting(temp, WaitingCount(temp) + 1), temp) != temp)
+			if(InterlockedCompareExchange(_lock, SetWaiting(temp, WaitingCount(temp) + 1), temp) != temp)
 				continue;
 
 			i = 0; //Reset the spincount for the next time
@@ -167,7 +167,7 @@ void RWLockIPC::StartWrite()
 			do
 			{
 				temp = *_lock;
-			} while(InterlockedCompareExchange((LONG*)_lock, SetWaiting(temp, WaitingCount(temp) - 1), temp) != temp);
+			} while(InterlockedCompareExchange(_lock, SetWaiting(temp, WaitingCount(temp) - 1), temp) != temp);
 		}
 	}
 }
@@ -190,7 +190,7 @@ void RWLockIPC::EndRead()
 		}
 
 		//Decrement reader count
-		if(InterlockedCompareExchange((LONG*)_lock, SetReaders(temp, ReaderCount(temp) - 1), temp) == temp)
+		if(InterlockedCompareExchange(_lock, SetReaders(temp, ReaderCount(temp) - 1), temp) == temp)
 			break;
 	}
 }
@@ -214,7 +214,7 @@ void RWLockIPC::EndWrite()
 		}
 
 		//Decrement writer count
-		if(InterlockedCompareExchange((LONG*)_lock, SetWriter(temp, false), temp) == temp)
+		if(InterlockedCompareExchange(_lock, SetWriter(temp, false), temp) == temp)
 			break;
 	}
 }
@@ -290,7 +290,7 @@ void RWLockIPCReentrant::StartRead()
 		entry->ThreadPointer = threadCounter;
 		InterlockedPushEntrySList(_threadPointers, &(entry->ItemEntry));
 	}
-	if(InterlockedIncrement((LONG*)threadCounter) == 1)
+	if(InterlockedIncrement(threadCounter) == 1)
 		_rwLock.StartRead();
 }
 
@@ -306,7 +306,7 @@ void RWLockIPCReentrant::StartWrite()
 		entry->ThreadPointer = threadCounter;
 		InterlockedPushEntrySList(_threadPointers, &(entry->ItemEntry));
 	}
-	if(InterlockedIncrement((LONG*)threadCounter) == 1)
+	if(InterlockedIncrement(threadCounter) == 1)
 		_rwLock.StartWrite();
 }
 
@@ -323,7 +323,7 @@ void RWLockIPCReentrant::EndRead()
 		InterlockedPushEntrySList(_threadPointers, &(entry->ItemEntry));
 	}
 	assert(*threadCounter > 0);
-	if(InterlockedDecrement((LONG*)threadCounter) == 0)
+	if(InterlockedDecrement(threadCounter) == 0)
 		_rwLock.EndRead();
 }
 
@@ -340,7 +340,7 @@ void RWLockIPCReentrant::EndWrite()
 		InterlockedPushEntrySList(_threadPointers, &(entry->ItemEntry));
 	}
 	assert(*threadCounter > 0);
-	if(InterlockedDecrement((LONG*)threadCounter) == 0)
+	if(InterlockedDecrement(threadCounter) == 0)
 		_rwLock.EndWrite();
 }
 
