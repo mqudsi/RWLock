@@ -2,7 +2,7 @@ RWLock is a C++ library meant to provide light-weight read-write locks
 for Windows thread synchronization. RWLock is intended to be both
 versatile and lightweight, and comes in a few different flavors.
 
-RWLock is developed and maintained by Mahmoud Al- Qudsi
+RWLock is developed and maintained by Mahmoud Al-Qudsi
 <mqudsi@neosmart.net> of NeoSmart Technologies <http://neosmart.net/>
 
 Pthread's rwlock objects provide a high-performance means of allowing
