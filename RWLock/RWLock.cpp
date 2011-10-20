@@ -24,7 +24,7 @@ __forceinline __int32 SetReaders(unsigned __int32 lock, unsigned __int16 readers
 
 __forceinline __int16 WaitingCount(unsigned __int32 lock)
 {
-	return (lock & 0x3FFF8000) >> 15;
+	return (__int16) ((lock & 0x3FFF8000) >> 15);
 }
 
 __forceinline __int32 SetWaiting(unsigned __int32 lock, unsigned __int16 waiting)
