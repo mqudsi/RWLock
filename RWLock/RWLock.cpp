@@ -106,7 +106,7 @@ void RWLockIPC::StartRead()
 {
 	for(int i = 0; ; ++i)
 	{
-		__int32 temp = *_lock;
+		unsigned __int32 temp = *_lock;
 		if(!Writer(temp))
 		{
 			if(InterlockedCompareExchange(_lock, SetReaders(temp, ReaderCount(temp) + 1), temp) == temp)
@@ -141,7 +141,7 @@ void RWLockIPC::StartWrite()
 {
 	for(int i = 0; ; ++i)
 	{
-		__int32 temp = *_lock;
+		unsigned __int32 temp = *_lock;
 		if(AllClear(temp))
 		{
 			if(InterlockedCompareExchange(_lock, SetWriter(temp, true), temp) == temp)
@@ -176,7 +176,7 @@ void RWLockIPC::EndRead()
 {
 	while(true)
 	{
-		__int32 temp = *_lock;
+		unsigned __int32 temp = *_lock;
 		assert(ReaderCount(temp) > 0);
 
 		if(ReaderCount(temp) == 1 && WaitingCount(temp) != 0)
@@ -199,7 +199,7 @@ void RWLockIPC::EndWrite()
 {
 	while(true)
 	{
-		__int32 temp;
+		unsigned __int32 temp;
 
 		while(true)
 		{
