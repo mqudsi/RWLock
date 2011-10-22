@@ -43,7 +43,7 @@ public:
 class RWLOCK_API RWLock
 {
 private:
-	RWLockIPC _rwLock;
+	RWLockIPC *_rwLock;
 	unsigned __int32 *_lock;
 
 public:

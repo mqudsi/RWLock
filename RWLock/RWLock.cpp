@@ -219,34 +219,95 @@ void RWLockIPC::EndWrite()
 	}
 }
 
+typedef VOID (WINAPI *InitializeSRWLockPtr)(__out  PVOID *SRWLock);
+typedef VOID (WINAPI *ReleaseSRWLockExclusivePtr)(__inout  PVOID *SRWLock);
+typedef VOID (WINAPI *ReleaseSRWLockSharedPtr)(__inout  PVOID *SRWLock);
+typedef VOID (WINAPI *AcquireSRWLockExclusivePtr)(__inout  PVOID *SRWLock);
+typedef VOID (WINAPI *AcquireSRWLockSharedPtr)(__inout  PVOID *SRWLock);
+
+InitializeSRWLockPtr SRWInit;
+ReleaseSRWLockExclusivePtr SRWEndWrite;
+ReleaseSRWLockSharedPtr SRWEndRead;
+AcquireSRWLockExclusivePtr SRWStartWrite;
+AcquireSRWLockSharedPtr SRWStartRead;
+
 RWLock::RWLock()
-	: _rwLock(&(*(_lock = (new unsigned int)) = RWLOCK_INIT), NULL)
 {
+	HMODULE hModule = LoadLibrary(_T("KERNEL32.DLL"));
+	SRWInit = (InitializeSRWLockPtr) GetProcAddress(hModule, "InitializeSRWLock");
+	if(SRWInit != NULL)
+	{
+		SRWEndWrite = (ReleaseSRWLockExclusivePtr) GetProcAddress(hModule, "ReleaseSRWLockExclusive");
+		SRWEndRead = (ReleaseSRWLockSharedPtr) GetProcAddress(hModule, "ReleaseSRWLockShared");
+		SRWStartWrite = (AcquireSRWLockExclusivePtr) GetProcAddress(hModule, "AcquireSRWLockExclusive");
+		SRWStartRead = (AcquireSRWLockSharedPtr) GetProcAddress(hModule, "AcquireSRWLockShared");
+
+		FreeModule(hModule);
+
+		SRWInit((PVOID*)&_lock);
+	}
+	else
+	{
+		_lock = new unsigned int(RWLOCK_INIT);
+		_rwLock = new RWLockIPC(_lock, NULL);
+	}
 }
 
 RWLock::~RWLock()
 {
-	delete _lock;
+	if(SRWInit == NULL)
+	{
+		delete _lock;
+		delete _rwLock;
+	}
 }
 
 void RWLock::StartRead()
 {
-	_rwLock.StartRead();
+	if(SRWInit != NULL)
+	{
+		SRWStartRead((PVOID*)&_lock);
+	}
+	else
+	{
+		_rwLock->StartRead();
+	}
 }
 
 void RWLock::StartWrite()
 {
-	_rwLock.StartWrite();
+	if(SRWInit != NULL)
+	{
+		SRWStartWrite((PVOID*)&_lock);
+	}
+	else
+	{
+		_rwLock->StartWrite();
+	}
 }
 
 void RWLock::EndRead()
 {
-	_rwLock.EndRead();
+	if(SRWInit != NULL)
+	{
+		SRWEndRead((PVOID*)&_lock);
+	}
+	else
+	{
+		_rwLock->EndRead();
+	}
 }
 
 void RWLock::EndWrite()
 {
-	_rwLock.EndWrite();
+	if(SRWInit != NULL)
+	{
+		SRWEndWrite((PVOID*)&_lock);
+	}
+	else
+	{
+		_rwLock->EndWrite();
+	}
 }
 
 struct THREAD_ENTRY
