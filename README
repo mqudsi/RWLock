@@ -14,7 +14,7 @@ library should come in handy to fill in the gap. You can either use
 RWLock on all target systems or dynamically choose between RWLocks and
 native WIN32 SRW Locks at runtime.
 
-The plain-Jane RWLock() implementation will automatically use MSOFT's
+The plain-Jane RWLock() implementation will automatically use MSFT's
 SRWLocks behind the scenes if its used on Windows Vista or above.
 
 Unlike pthread_rwlock_t and SRW Locks, RWLock can also be used for
