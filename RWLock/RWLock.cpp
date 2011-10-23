@@ -83,7 +83,7 @@ RWLockIPC::RWLockIPC(intptr_t *lock, LPCTSTR guid)
 
 	//Silently switch to SRW Locks?
 	HMODULE hModule = LoadLibrary(_T("KERNEL32.DLL"));
-	SRWInit = (InitializeSRWLockPtr) GetProcAddress(hModule, "InitializeSRWLock");
+	SRWInit = guid ? NULL : (InitializeSRWLockPtr) GetProcAddress(hModule, "InitializeSRWLock");
 	if(SRWInit != NULL)
 	{
 		SRWEndWrite = (ReleaseSRWLockExclusivePtr) GetProcAddress(hModule, "ReleaseSRWLockExclusive");
@@ -129,7 +129,7 @@ RWLockIPC::RWLockIPC(intptr_t *lock, LPCTSTR guid)
 
 RWLockIPC::~RWLockIPC()
 {
-	if(SRWInit != NULL)
+	if(SRWInit == NULL)
 	{
 		CloseHandle(_event);
 	}
@@ -139,7 +139,7 @@ void RWLockIPC::StartRead()
 {
 	if(SRWInit != NULL)
 	{
-		SRWStartRead((PVOID*)&_lock);
+		SRWStartRead((PVOID*)_lock);
 	}
 	else
 	{
@@ -181,7 +181,7 @@ void RWLockIPC::StartWrite()
 {
 	if(SRWInit != NULL)
 	{
-		SRWStartWrite((PVOID*)&_lock);
+		SRWStartWrite((PVOID*)_lock);
 	}
 	else
 	{
@@ -223,7 +223,7 @@ void RWLockIPC::EndRead()
 {
 	if(SRWInit != NULL)
 	{
-		SRWEndRead((PVOID*)&_lock);
+		SRWEndRead((PVOID*)_lock);
 	}
 	else
 	{
@@ -253,7 +253,7 @@ void RWLockIPC::EndWrite()
 {
 	if(SRWInit != NULL)
 	{
-		SRWEndWrite((PVOID*)&_lock);
+		SRWEndWrite((PVOID*)_lock);
 	}
 	else
 	{
@@ -281,7 +281,7 @@ void RWLockIPC::EndWrite()
 }
 
 RWLock::RWLock()
-	: _rwLock(&_lock, NULL)
+	: _rwLock(&(_lock = 0), NULL)
 {
 }
 
@@ -405,7 +405,7 @@ void RWLockIPCReentrant::EndWrite()
 }
 
 RWLockReentrant::RWLockReentrant()
-	: _rwLock(&_lock, NULL)
+	: _rwLock(&(_lock = 0), NULL)
 {
 }
 
