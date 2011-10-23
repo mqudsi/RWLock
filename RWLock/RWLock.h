@@ -31,7 +31,7 @@ private:
 	unsigned __int32 *_lock;
 
 public:
-	RWLockIPC(unsigned __int32 *lock, LPCTSTR guid);
+	RWLockIPC(intptr_t *lock, LPCTSTR guid);
 	~RWLockIPC();
 
 	void RWLOCK_CC StartRead();
@@ -43,8 +43,8 @@ public:
 class RWLOCK_API RWLock
 {
 private:
-	RWLockIPC *_rwLock;
-	unsigned __int32 *_lock;
+	RWLockIPC _rwLock;
+	intptr_t _lock;
 
 public:
 	RWLock();
@@ -64,7 +64,7 @@ private:
 	PSLIST_HEADER _threadPointers;
 
 public:
-	RWLockIPCReentrant(unsigned __int32 *lock, LPCTSTR guid);
+	RWLockIPCReentrant(intptr_t *lock, LPCTSTR guid);
 	~RWLockIPCReentrant();
 
 	void RWLOCK_CC StartRead();
@@ -77,7 +77,7 @@ class RWLOCK_API RWLockReentrant
 {
 private:
 	RWLockIPCReentrant _rwLock;
-	unsigned __int32 *_lock;
+	intptr_t _lock;
 
 public:
 	RWLockReentrant();

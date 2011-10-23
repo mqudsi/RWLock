@@ -64,161 +64,7 @@ __forceinline __int32 SetInitialized(unsigned __int32 lock, bool initialized)
 		return lock & ~0x80000000;
 }
 
-RWLockIPC::RWLockIPC(unsigned __int32 *lock, LPCTSTR guid)
-{
-	SECURITY_ATTRIBUTES sa;
-	SECURITY_DESCRIPTOR sd;
-	sa.nLength = sizeof(SECURITY_ATTRIBUTES);
-	sa.bInheritHandle = TRUE;
-	sa.lpSecurityDescriptor = &sd;
-	InitializeSecurityDescriptor(&sd, SECURITY_DESCRIPTOR_REVISION);
-	SetSecurityDescriptorDacl(&sd, TRUE, NULL, FALSE); 
-
-	_lock = lock;
-
-	//Create local volatile pointer for double-checked locking to work
-	volatile unsigned __int32 *vLock = lock;
-
-	_event = CreateEvent(&sa, FALSE, FALSE, guid);
-
-	if(!Initialized(*vLock))
-	{
-		HANDLE hMutex = CreateMutex(&sa, FALSE, guid);
-		WaitForSingleObject(hMutex, INFINITE);
-
-		if(!Initialized(*vLock))
-		{
-			*vLock = RWLOCK_INIT;
-			*vLock = SetInitialized(*vLock, true);
-		}
-
-		ReleaseMutex(hMutex);
-		CloseHandle(hMutex);
-	}
-}
-
-RWLockIPC::~RWLockIPC()
-{
-	CloseHandle(_event);
-}
-
-void RWLockIPC::StartRead()
-{
-	for(int i = 0; ; ++i)
-	{
-		unsigned __int32 temp = *_lock;
-		if(!Writer(temp))
-		{
-			if(InterlockedCompareExchange(_lock, SetReaders(temp, ReaderCount(temp) + 1), temp) == temp)
-				return;
-			else
-				continue;
-		}
-		else
-		{
-			if(i < MAX_SPIN)
-			{
-				YieldProcessor();
-				continue;
-			}
-
-			//The pending write operation is taking too long, so we'll drop to the kernel and wait
-			if(InterlockedCompareExchange(_lock, SetWaiting(temp, WaitingCount(temp) + 1), temp) != temp)
-				continue;
-
-			i = 0; //Reset the spincount for the next time
-			WaitForSingleObject(_event, INFINITE);
-
-			do
-			{
-				temp = *_lock;
-			} while(InterlockedCompareExchange(_lock, SetWaiting(temp, WaitingCount(temp) - 1), temp) != temp);
-		}
-	}
-}
-
-void RWLockIPC::StartWrite()
-{
-	for(int i = 0; ; ++i)
-	{
-		unsigned __int32 temp = *_lock;
-		if(AllClear(temp))
-		{
-			if(InterlockedCompareExchange(_lock, SetWriter(temp, true), temp) == temp)
-				return;
-			else
-				continue;
-		}
-		else
-		{
-			if(i < MAX_SPIN)
-			{
-				YieldProcessor();
-				continue;
-			}
-
-			//The pending read operations are taking too long, so we'll drop to the kernel and wait
-			if(InterlockedCompareExchange(_lock, SetWaiting(temp, WaitingCount(temp) + 1), temp) != temp)
-				continue;
-
-			i = 0; //Reset the spincount for the next time
-			WaitForSingleObject(_event, INFINITE);
-
-			do
-			{
-				temp = *_lock;
-			} while(InterlockedCompareExchange(_lock, SetWaiting(temp, WaitingCount(temp) - 1), temp) != temp);
-		}
-	}
-}
-
-void RWLockIPC::EndRead()
-{
-	while(true)
-	{
-		unsigned __int32 temp = *_lock;
-		assert(ReaderCount(temp) > 0);
-
-		if(ReaderCount(temp) == 1 && WaitingCount(temp) != 0)
-		{
-			//Note: this isn't nor has to be thread-safe, as the worst a duplicate notification can do
-			//is cause a waiting to reader to wake, perform a spinlock, then go back to sleep
-
-			//We're the last reader and there's a pending write
-			//Wake one waiting writer
-			SetEvent(_event);
-		}
-
-		//Decrement reader count
-		if(InterlockedCompareExchange(_lock, SetReaders(temp, ReaderCount(temp) - 1), temp) == temp)
-			break;
-	}
-}
-
-void RWLockIPC::EndWrite()
-{
-	while(true)
-	{
-		unsigned __int32 temp;
-
-		while(true)
-		{
-			temp = *_lock;
-			assert(Writer(temp));
-			if(WaitingCount(temp) == 0)
-				break;
-
-			//Note: this is thread-safe (there's guaranteed not to be another EndWrite simultaneously)
-			//Wake all waiting readers or writers, loop until wake confirmation is received
-			SetEvent(_event);
-		}
-
-		//Decrement writer count
-		if(InterlockedCompareExchange(_lock, SetWriter(temp, false), temp) == temp)
-			break;
-	}
-}
-
+//SRW imports
 typedef VOID (WINAPI *InitializeSRWLockPtr)(__out  PVOID *SRWLock);
 typedef VOID (WINAPI *ReleaseSRWLockExclusivePtr)(__inout  PVOID *SRWLock);
 typedef VOID (WINAPI *ReleaseSRWLockSharedPtr)(__inout  PVOID *SRWLock);
@@ -231,8 +77,11 @@ ReleaseSRWLockSharedPtr SRWEndRead;
 AcquireSRWLockExclusivePtr SRWStartWrite;
 AcquireSRWLockSharedPtr SRWStartRead;
 
-RWLock::RWLock()
+RWLockIPC::RWLockIPC(intptr_t *lock, LPCTSTR guid)
 {
+	_lock = (unsigned __int32 *) lock;
+
+	//Silently switch to SRW Locks?
 	HMODULE hModule = LoadLibrary(_T("KERNEL32.DLL"));
 	SRWInit = (InitializeSRWLockPtr) GetProcAddress(hModule, "InitializeSRWLock");
 	if(SRWInit != NULL)
@@ -244,25 +93,49 @@ RWLock::RWLock()
 
 		FreeModule(hModule);
 
-		SRWInit((PVOID*)&_lock);
+		SRWInit((PVOID*)_lock);
 	}
 	else
 	{
-		_lock = new unsigned int(RWLOCK_INIT);
-		_rwLock = new RWLockIPC(_lock, NULL);
+		SECURITY_ATTRIBUTES sa;
+		SECURITY_DESCRIPTOR sd;
+		sa.nLength = sizeof(SECURITY_ATTRIBUTES);
+		sa.bInheritHandle = TRUE;
+		sa.lpSecurityDescriptor = &sd;
+		InitializeSecurityDescriptor(&sd, SECURITY_DESCRIPTOR_REVISION);
+		SetSecurityDescriptorDacl(&sd, TRUE, NULL, FALSE); 
+
+		//Create local volatile pointer for double-checked locking to work
+		volatile unsigned __int32 *vLock = _lock;
+
+		_event = CreateEvent(&sa, FALSE, FALSE, guid);
+
+		if(!Initialized(*vLock))
+		{
+			HANDLE hMutex = CreateMutex(&sa, FALSE, guid);
+			WaitForSingleObject(hMutex, INFINITE);
+
+			if(!Initialized(*vLock))
+			{
+				*vLock = RWLOCK_INIT;
+				*vLock = SetInitialized(*vLock, true);
+			}
+
+			ReleaseMutex(hMutex);
+			CloseHandle(hMutex);
+		}
 	}
 }
 
-RWLock::~RWLock()
+RWLockIPC::~RWLockIPC()
 {
-	if(SRWInit == NULL)
+	if(SRWInit != NULL)
 	{
-		delete _lock;
-		delete _rwLock;
+		CloseHandle(_event);
 	}
 }
 
-void RWLock::StartRead()
+void RWLockIPC::StartRead()
 {
 	if(SRWInit != NULL)
 	{
@@ -270,11 +143,41 @@ void RWLock::StartRead()
 	}
 	else
 	{
-		_rwLock->StartRead();
+		for(int i = 0; ; ++i)
+		{
+			unsigned __int32 temp = *_lock;
+			if(!Writer(temp))
+			{
+				if(InterlockedCompareExchange(_lock, SetReaders(temp, ReaderCount(temp) + 1), temp) == temp)
+					return;
+				else
+					continue;
+			}
+			else
+			{
+				if(i < MAX_SPIN)
+				{
+					YieldProcessor();
+					continue;
+				}
+
+				//The pending write operation is taking too long, so we'll drop to the kernel and wait
+				if(InterlockedCompareExchange(_lock, SetWaiting(temp, WaitingCount(temp) + 1), temp) != temp)
+					continue;
+
+				i = 0; //Reset the spincount for the next time
+				WaitForSingleObject(_event, INFINITE);
+
+				do
+				{
+					temp = *_lock;
+				} while(InterlockedCompareExchange(_lock, SetWaiting(temp, WaitingCount(temp) - 1), temp) != temp);
+			}
+		}
 	}
 }
 
-void RWLock::StartWrite()
+void RWLockIPC::StartWrite()
 {
 	if(SRWInit != NULL)
 	{
@@ -282,11 +185,41 @@ void RWLock::StartWrite()
 	}
 	else
 	{
-		_rwLock->StartWrite();
+		for(int i = 0; ; ++i)
+		{
+			unsigned __int32 temp = *_lock;
+			if(AllClear(temp))
+			{
+				if(InterlockedCompareExchange(_lock, SetWriter(temp, true), temp) == temp)
+					return;
+				else
+					continue;
+			}
+			else
+			{
+				if(i < MAX_SPIN)
+				{
+					YieldProcessor();
+					continue;
+				}
+
+				//The pending read operations are taking too long, so we'll drop to the kernel and wait
+				if(InterlockedCompareExchange(_lock, SetWaiting(temp, WaitingCount(temp) + 1), temp) != temp)
+					continue;
+
+				i = 0; //Reset the spincount for the next time
+				WaitForSingleObject(_event, INFINITE);
+
+				do
+				{
+					temp = *_lock;
+				} while(InterlockedCompareExchange(_lock, SetWaiting(temp, WaitingCount(temp) - 1), temp) != temp);
+			}
+		}
 	}
 }
 
-void RWLock::EndRead()
+void RWLockIPC::EndRead()
 {
 	if(SRWInit != NULL)
 	{
@@ -294,11 +227,29 @@ void RWLock::EndRead()
 	}
 	else
 	{
-		_rwLock->EndRead();
+		while(true)
+		{
+			unsigned __int32 temp = *_lock;
+			assert(ReaderCount(temp) > 0);
+
+			if(ReaderCount(temp) == 1 && WaitingCount(temp) != 0)
+			{
+				//Note: this isn't nor has to be thread-safe, as the worst a duplicate notification can do
+				//is cause a waiting to reader to wake, perform a spinlock, then go back to sleep
+
+				//We're the last reader and there's a pending write
+				//Wake one waiting writer
+				SetEvent(_event);
+			}
+
+			//Decrement reader count
+			if(InterlockedCompareExchange(_lock, SetReaders(temp, ReaderCount(temp) - 1), temp) == temp)
+				break;
+		}
 	}
 }
 
-void RWLock::EndWrite()
+void RWLockIPC::EndWrite()
 {
 	if(SRWInit != NULL)
 	{
@@ -306,8 +257,56 @@ void RWLock::EndWrite()
 	}
 	else
 	{
-		_rwLock->EndWrite();
+		while(true)
+		{
+			unsigned __int32 temp;
+
+			while(true)
+			{
+				temp = *_lock;
+				assert(Writer(temp));
+				if(WaitingCount(temp) == 0)
+					break;
+
+				//Note: this is thread-safe (there's guaranteed not to be another EndWrite simultaneously)
+				//Wake all waiting readers or writers, loop until wake confirmation is received
+				SetEvent(_event);
+			}
+
+			//Decrement writer count
+			if(InterlockedCompareExchange(_lock, SetWriter(temp, false), temp) == temp)
+				break;
+		}
 	}
+}
+
+RWLock::RWLock()
+	: _rwLock(&_lock, NULL)
+{
+}
+
+RWLock::~RWLock()
+{
+}
+
+void RWLock::StartRead()
+{
+	_rwLock.StartRead();
+}
+
+void RWLock::StartWrite()
+{
+	_rwLock.StartWrite();
+}
+
+void RWLock::EndRead()
+{
+	_rwLock.EndRead();
+}
+
+void RWLock::EndWrite()
+{
+	_rwLock.EndWrite();
 }
 
 struct THREAD_ENTRY
@@ -316,7 +315,7 @@ struct THREAD_ENTRY
 	unsigned int* ThreadPointer;
 };
 
-RWLockIPCReentrant::RWLockIPCReentrant(unsigned __int32 *lock, LPCTSTR guid)
+RWLockIPCReentrant::RWLockIPCReentrant(intptr_t *lock, LPCTSTR guid)
 	: _rwLock(lock, guid)
 {
 	_tlsIndex = TlsAlloc();
@@ -406,13 +405,12 @@ void RWLockIPCReentrant::EndWrite()
 }
 
 RWLockReentrant::RWLockReentrant()
-	: _rwLock(&(*(_lock = (new unsigned int)) = RWLOCK_INIT), NULL)
+	: _rwLock(&_lock, NULL)
 {
 }
 
 RWLockReentrant::~RWLockReentrant()
 {
-	delete _lock;
 }
 
 void RWLockReentrant::StartRead()
