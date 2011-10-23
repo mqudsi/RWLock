@@ -19,7 +19,7 @@ SRWLocks behind the scenes if run on Windows Vista or above.
 
 Unlike pthread_rwlock_t and SRW Locks, RWLock can also be used for
 interprocess read-write synchronization via placement of a single
-32-bit unsigned integer in a shared data segment.
+intptr_t object memory-mapped or stored in a shared data segment.
 
 Usage:
 
@@ -74,8 +74,7 @@ requirements:
 
 3. RWLockIPC(intptr_t *lock, LPCTSTR guid)
 
-lock: pointer to a 32-bit unsigned integer located in a shared data
-segment
+lock: pointer to a intptr_t object located in a shared data segment
 
 guid: unique string used to create the named synchronization objects
 
@@ -89,8 +88,7 @@ guid: unique string used to create the named synchronization objects
 
 4. RWLockIPCReentrant(intptr_t *lock, LPCTSTR guid)
 
-lock: pointer to a 32-bit unsigned integer located in a shared data
-segment
+lock: pointer to a intptr_t object located in a shared data segment
 
 guid: unique string used to create the named synchronization objects
 
