@@ -72,7 +72,7 @@ requirements:
   switch to an SRW Lock underneath the hood for optimum performance.
 
 
-3. RWLockIPC(unsigned __int32 *lock, LPCTSTR guid)
+3. RWLockIPC(intptr_t *lock, LPCTSTR guid)
 
 lock: pointer to a 32-bit unsigned integer located in a shared data
 segment
@@ -87,7 +87,7 @@ guid: unique string used to create the named synchronization objects
   BeginWrite()
 
 
-4. RWLockIPCReentrant(unsigned __int32 *lock, LPCTSTR guid)
+4. RWLockIPCReentrant(intptr_t *lock, LPCTSTR guid)
 
 lock: pointer to a 32-bit unsigned integer located in a shared data
 segment
