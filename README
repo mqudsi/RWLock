@@ -14,8 +14,8 @@ library should come in handy to fill in the gap. You can either use
 RWLock on all target systems or dynamically choose between RWLocks and
 native WIN32 SRW Locks at runtime.
 
-The plain-Jane RWLock() implementation will automatically use MSFT's
-SRWLocks behind the scenes if its used on Windows Vista or above.
+Non-IPC RWLock() implementations will automatically use Microsoft's
+SRWLocks behind the scenes if run on Windows Vista or above.
 
 Unlike pthread_rwlock_t and SRW Locks, RWLock can also be used for
 interprocess read-write synchronization via placement of a single
@@ -57,8 +57,7 @@ requirements:
   BeginWrite() but before calling EndWrite()
 
 * On Windows Vista/7/8, this RWLock implementation will dynamically
-  switch to a basic SRW Lock underneath the hood for optimum
-  performance. Other RWLock() flavors do not have this feature.
+  switch to an SRW Lock underneath the hood for optimum performance.
 
 
 2. RWLockReentrant()
@@ -68,6 +67,9 @@ requirements:
 * RWLockReentrant supports calling BeginRead() after BeginWrite()
 
 * RWLockReentrant cannot be used for cross-process synchronization
+
+* On Windows Vista/7/8, this RWLock implementation will dynamically
+  switch to an SRW Lock underneath the hood for optimum performance.
 
 
 3. RWLockIPC(unsigned __int32 *lock, LPCTSTR guid)
