@@ -10,12 +10,10 @@ either multiple readers to access a resource simultaneously or a
 single writer. Windows did not have an equivalent thread
 synchronization primitive until Windows Vista was released. However,
 most software developers still target Windows XP and above, so this
-library should come in handy to fill in the gap. You can either use
-RWLock on all target systems or dynamically choose between RWLocks and
-native WIN32 SRW Locks at runtime.
+library should come in handy to fill in the gap.
 
 Non-IPC RWLock() implementations will automatically use Microsoft's
-SRWLocks behind the scenes if run on Windows Vista or above.
+SRW Locks behind the scene if run on Windows Vista or above.
 
 Unlike pthread_rwlock_t and SRW Locks, RWLock can also be used for
 interprocess read-write synchronization via placement of a single
