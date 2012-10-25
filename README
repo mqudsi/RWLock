@@ -45,8 +45,9 @@ requirements:
 
 1. RWLock()
 
-* This is the fastest and lightest RWLock flavor RWLock cannot be used
-  for cross-process synchronization
+* This is the fastest and lightest RWLock flavor 
+
+* RWLock cannot be used for cross-process synchronization
 
 * RWLock does not support reentrance(BeginRead() being called multiple
   times by the same thread before EndRead() is called)
