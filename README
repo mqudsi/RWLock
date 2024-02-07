@@ -49,11 +49,11 @@ requirements:
 
 * RWLock cannot be used for cross-process synchronization
 
-* RWLock does not support reentrance(BeginRead() being called multiple
+* RWLock does not support reentrance(StartRead() being called multiple
   times by the same thread before EndRead() is called)
 
-* RWLock does not support calling BeginRead() after calling
-  BeginWrite() but before calling EndWrite()
+* RWLock does not support calling StartRead() after calling
+  StartWrite() but before calling EndWrite()
 
 * On Windows Vista/7/8, this RWLock implementation will dynamically
   switch to an SRW Lock underneath the hood for optimum performance.
@@ -63,7 +63,7 @@ requirements:
 
 * RWLockReentrant supports reentrance
 
-* RWLockReentrant supports calling BeginRead() after BeginWrite()
+* RWLockReentrant supports calling StartRead() after StartWrite()
 
 * RWLockReentrant cannot be used for cross-process synchronization
 
@@ -81,8 +81,8 @@ guid: unique string used to create the named synchronization objects
 
 * RWLockIPC does not support reentrance
 
-* RWLockIPC does not support calling BeginRead() after calling
-  BeginWrite()
+* RWLockIPC does not support calling StartRead() after calling
+  StartWrite()
 
 
 4. RWLockIPCReentrant(intptr_t *lock, LPCTSTR guid)
@@ -95,5 +95,5 @@ guid: unique string used to create the named synchronization objects
 
 * RWLockIPCReentrant supports reentrance
 
-* RWLockIPCReentrant supports calling BeginRead() after calling
-  BeginWrite()
+* RWLockIPCReentrant supports calling StartRead() after calling
+  StartWrite()

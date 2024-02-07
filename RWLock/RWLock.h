@@ -26,9 +26,47 @@ const unsigned __int32 RWLOCK_INIT = 0x00000000;
 
 class RWLOCK_API RWLockIPC
 {
+	//SRW imports
+	typedef void (WINAPI *InitializeSRWLockPtr)(__out PVOID *SRWLock);
+	typedef void (WINAPI *AcquireSRWLockSharedPtr)(__inout PVOID *SRWLock);
+	typedef void (WINAPI *ReleaseSRWLockSharedPtr)(__inout PVOID *SRWLock);
+	typedef void (WINAPI *AcquireSRWLockExclusivePtr)(__inout PVOID *SRWLock);
+	typedef void (WINAPI *ReleaseSRWLockExclusivePtr)(__inout PVOID *SRWLock);
+
+	InitializeSRWLockPtr SRWInit_;
+	AcquireSRWLockSharedPtr SRWStartRead_;
+	ReleaseSRWLockSharedPtr SRWEndRead_;
+	AcquireSRWLockExclusivePtr SRWStartWrite_;
+	ReleaseSRWLockExclusivePtr SRWEndWrite_;
+
 private:
-	HANDLE _event;
+	void InitSRWLockNative_();
+	void SRWStartReadNative_();
+	void SRWEndReadNative_();
+	void SRWStartWriteNative_();
+	void SRWEndWriteNative_();
+	void CloseEventNative_();
+
+private:
+	void InitSRWLockImpl_();
+	void SRWStartReadImpl_();
+	void SRWEndReadImpl_();
+	void SRWStartWriteImpl_();
+	void SRWEndWriteImpl_();
+	void CloseEventImpl_();
+
+private:
+	void (RWLockIPC::*InitSRWLock_)();
+	void (RWLockIPC::*StartSRWRead_)();
+	void (RWLockIPC::*EndSRWRead_)();
+	void (RWLockIPC::*StartSRWWrite_)();
+	void (RWLockIPC::*EndSRWWrite_)();
+	void (RWLockIPC::*CloseEvent_)();
+
+private:
 	unsigned __int32 *_lock;
+	LPCTSTR _guid;
+	HANDLE _event;
 
 public:
 	RWLockIPC(intptr_t *lock, LPCTSTR guid);
@@ -60,7 +98,7 @@ class RWLOCK_API RWLockIPCReentrant
 {
 private:
 	RWLockIPC _rwLock;
-	unsigned int _tlsIndex;
+	DWORD _tlsIndex;
 	PSLIST_HEADER _threadPointers;
 
 public:
